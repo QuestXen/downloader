@@ -9,9 +9,9 @@ contextBridge.exposeInMainWorld('api', {
         }
     },
 
-    downloadVideo: async (url, format, outputPath) => {
+    downloadVideo: async (url, format, outputPath, quality) => {
         try {
-            return await ipcRenderer.invoke('start-download', { url, format, outputPath });
+            return await ipcRenderer.invoke('start-download', { url, format, outputPath, quality });
         } catch (error) {
             throw new Error('Download failed');
         }

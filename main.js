@@ -49,9 +49,9 @@ ipcMain.handle('select-directory', async () => {
     return result.filePaths[0];
 });
 
-ipcMain.handle('start-download', async (event, { url, format, outputPath }) => {
+ipcMain.handle('start-download', async (event, { url, format, outputPath, quality }) => {
     try {
-        currentDownload = downloadVideo(url, format, outputPath);
+        currentDownload = downloadVideo(url, format, outputPath, quality);
         
         currentDownload.on('progress', (progress) => {
             // Ensure all numbers are properly converted

@@ -88,13 +88,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Populate Quality Options
     function populateQualityOptions(formats) {
+        const selectedFormat = document.querySelector('input[name="format"]:checked').value;
         qualitySelect.innerHTML = '';
-        formats.forEach(format => {
-            const option = document.createElement('option');
-            option.value = format.itag;
-            option.textContent = `${format.qualityLabel || format.quality} (${format.container})`;
-            qualitySelect.appendChild(option);
-        });
+        
+        formats
+            .filter(format => {
+                if (selectedFormat === 'audio') {
+                    return format.hasAudio && !format.hasVideo;
+                }
+                return format.hasVideo;
+            })
+            .forEach(format => {
+                const option = document.createElement('option');
+                option.value = format.itag;
+                
+                if (selectedFormat === 'audio') {
+                    option.textContent = `${format.audioQuality || 'Unknown'} (${format.container})`;
+                } else {
+                    option.textContent = `${format.qualityLabel} (${format.container})`;
+                }
+                
+                qualitySelect.appendChild(option);
+            });
 
         if (settings.autoQuality) {
             qualitySelect.selectedIndex = 0;
@@ -121,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const format = document.querySelector('input[name="format"]:checked').value;
+        const quality = qualitySelect.value;
         progressSection.classList.remove('hidden');
         downloadBtn.classList.add('hidden');
         cancelBtn.classList.remove('hidden');
@@ -132,7 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
             await window.api.downloadVideo(
                 videoUrlInput.value,
                 format,
-                downloadPath.value
+                downloadPath.value,
+                quality // Fügen Sie die ausgewählte Qualität hinzu
             );
 
             setStatus('Download completed successfully!', 'success');
@@ -185,4 +202,13 @@ document.addEventListener('DOMContentLoaded', () => {
         progressText.textContent = '0%';
         downloadSpeed.textContent = '';
     }
+
+    // Fügen Sie einen Event Listener für Format-Änderungen hinzu
+    document.querySelectorAll('input[name="format"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (videoInfo.classList.contains('hidden')) return;
+            const videoData = lastVideoData; // Speichern Sie die Video-Daten global
+            populateQualityOptions(videoData.formats);
+        });
+    });
 });
