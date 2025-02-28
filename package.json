@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "release": "electron-builder --publish always"
+    "release": "node -r dotenv/config ./node_modules/.bin/electron-builder --publish always"
   },
   "build": {
     "appId": "com.questxen.youtube-downloader",
@@ -34,6 +34,7 @@
     ]
   },
   "devDependencies": {
+    "dotenv": "^16.4.7",
     "electron": "^34.3.0",
     "electron-builder": "^25.1.8"
   },
