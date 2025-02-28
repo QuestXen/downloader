@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A simple YouTube downloader application built with Electron.",
   "main": "main.js",
   "type": "module",
@@ -58,20 +58,15 @@
         "to": "app.asar.unpacked/node_modules/undici"
       }
     ],
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "QuestXen",
-        "repo": "downloader",
-        "private": true,
-        "releaseType": "release",
-        "token": "${env.GH_TOKEN}",
-        "updateInfo": {
-          "releaseNotes": "New version available"
-        },
-        "publishAutoUpdate": true
-      }
-    ],
+    "publish": {
+      "provider": "github",
+      "owner": "QuestXen",
+      "repo": "downloader",
+      "private": false,
+      "releaseType": "release",
+      "publishAutoUpdate": true,
+      "vPrefixedTagName": true
+    },
     "directories": {
       "output": "dist",
       "buildResources": "build"
