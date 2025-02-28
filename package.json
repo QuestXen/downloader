@@ -7,7 +7,31 @@
   "author": "Artjom",
   "license": "MIT",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder",
+    "release": "electron-builder --publish always"
+  },
+  "build": {
+    "appId": "com.questxen.youtube-downloader",
+    "productName": "Youtube Downloader",
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "QuestXen",
+        "repo": "downloader"
+      }
+    ]
   },
   "devDependencies": {
     "electron": "^34.3.0",
@@ -15,7 +39,9 @@
   },
   "dependencies": {
     "@distube/ytdl-core": "^4.16.4",
+    "electron-log": "^5.3.0",
     "electron-store": "^10.0.1",
+    "electron-updater": "^6.3.9",
     "ffmpeg-static": "^5.2.0"
   }
 }
