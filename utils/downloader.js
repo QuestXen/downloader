@@ -37,35 +37,34 @@ async function getVideoInfo(url) {
         const videoDetails = info.videoDetails;
         const formats = info.formats;
         
-        // Verbesserte Format-Filterung
-        const filteredFormats = formats
+        // Verbesserte Format-Filterung für alle Qualitäten
+        const videoFormats = formats
             .filter(format => {
-                // Für Video-Formate
-                if (format.hasVideo) {
-                    return format.hasVideo && format.hasAudio; // Nur Formate mit Video UND Audio
-                }
-                // Für Audio-Formate
-                return format.hasAudio && !format.hasVideo; // Nur Audio-Formate
+                // Akzeptiere alle Video-Formate, auch ohne Audio
+                return format.hasVideo && format.qualityLabel;
             })
             .sort((a, b) => {
-                // Sortiere nach Qualität (höchste zuerst)
-                if (a.height && b.height) {
-                    return b.height - a.height;
-                }
-                return 0;
+                // Sortiere nach Höhe (Qualität)
+                return (b.height || 0) - (a.height || 0);
             });
+
+        // Entferne Duplikate basierend auf der Qualität
+        const uniqueFormats = videoFormats.filter((format, index, self) =>
+            index === self.findIndex(f => f.qualityLabel === format.qualityLabel)
+        );
 
         return {
             title: videoDetails.title,
             duration: parseInt(videoDetails.lengthSeconds),
             thumbnail: videoDetails.thumbnails[0].url,
-            formats: filteredFormats.map(format => ({
+            formats: uniqueFormats.map(format => ({
                 itag: format.itag,
-                qualityLabel: format.qualityLabel || format.audioQuality || 'Audio Only',
+                qualityLabel: format.qualityLabel,
                 container: format.container,
                 hasVideo: format.hasVideo,
                 hasAudio: format.hasAudio,
                 height: format.height || 0,
+                fps: format.fps || 0,
                 audioBitrate: format.audioBitrate || 0
             }))
         };
@@ -116,64 +115,130 @@ function downloadVideo(url, format, outputPath, quality) { // Fügen Sie quality
     };
 }
 
-function downloadVideoFile(url, outputFile, emitter, quality) {
-    const video = ytdl(url, {
-        quality: quality, // Just pass the itag directly
-        filter: format => format.hasVideo && format.hasAudio,
-        agent,
-        requestOptions: {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+async function downloadVideoFile(url, outputFile, emitter, quality) {
+    // Hole Video-Informationen
+    const info = await ytdl.getInfo(url);
+    const videoFormat = info.formats.find(f => f.itag === parseInt(quality));
+    
+    if (!videoFormat) {
+        throw new Error('Selected quality not found');
+    }
+
+    // Wenn das Format kein Audio hat, müssen wir es separat herunterladen
+    if (!videoFormat.hasAudio && videoFormat.hasVideo) {
+        // Finde das beste Audio-Format
+        const audioFormat = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+        
+        // Temporäre Dateien für Video und Audio
+        const tempVideoFile = outputFile + '.video.tmp';
+        const tempAudioFile = outputFile + '.audio.tmp';
+        
+        // Download Video
+        const video = ytdl(url, {
+            quality: quality,
+            filter: format => format.itag === parseInt(quality),
+            agent
+        });
+        
+        // Download Audio
+        const audio = ytdl(url, {
+            quality: audioFormat.itag,
+            filter: format => format.itag === audioFormat.itag,
+            agent
+        });
+
+        // Speichere Video und Audio
+        const videoWrite = createWriteStream(tempVideoFile);
+        const audioWrite = createWriteStream(tempAudioFile);
+        
+        video.pipe(videoWrite);
+        audio.pipe(audioWrite);
+
+        // Warte auf beide Downloads
+        await Promise.all([
+            new Promise((resolve, reject) => {
+                videoWrite.on('finish', resolve);
+                videoWrite.on('error', reject);
+            }),
+            new Promise((resolve, reject) => {
+                audioWrite.on('finish', resolve);
+                audioWrite.on('error', reject);
+            })
+        ]);
+
+        // Kombiniere Video und Audio mit FFmpeg
+        const ffmpegProcess = spawn(ffmpeg, [
+            '-i', tempVideoFile,
+            '-i', tempAudioFile,
+            '-c:v', 'copy',
+            '-c:a', 'aac',
+            outputFile
+        ]);
+
+        await new Promise((resolve, reject) => {
+            ffmpegProcess.on('close', resolve);
+            ffmpegProcess.on('error', reject);
+        });
+
+        // Lösche temporäre Dateien
+        unlink(tempVideoFile, () => {});
+        unlink(tempAudioFile, () => {});
+        
+        emitter.emit('complete', outputFile);
+    } else {
+        // Normaler Download für Formate mit Audio
+        const video = ytdl(url, {
+            quality: quality,
+            agent
+        });
+
+        let totalSize = 0;
+        let downloadedSize = 0;
+        let lastUpdate = Date.now();
+
+        video.once('response', response => {
+            totalSize = parseInt(response.headers['content-length']);
+        });
+
+        video.on('progress', (_, downloaded, total) => {
+            if (emitter.cancelled) {
+                video.destroy();
+                unlink(outputFile, () => {});
+                return;
             }
-        }
-    });
 
-    let totalSize = 0;
-    let downloadedSize = 0;
-    let lastUpdate = Date.now();
+            downloadedSize = downloaded;
+            const now = Date.now();
+            const timeDiff = now - lastUpdate;
 
-    video.once('response', response => {
-        totalSize = parseInt(response.headers['content-length']);
-    });
+            if (timeDiff > 1000) { // Update progress every second
+                const speed = (downloaded - downloadedSize) / (timeDiff / 1000);
+                const percent = (downloaded / total) * 100;
 
-    video.on('progress', (_, downloaded, total) => {
-        if (emitter.cancelled) {
-            video.destroy();
-            unlink(outputFile, () => {});
-            return;
-        }
+                emitter.emit('progress', {
+                    percent: Number(percent.toFixed(2)),
+                    downloaded: Number(downloaded),
+                    total: Number(total),
+                    speed: Number(speed)
+                });
 
-        downloadedSize = downloaded;
-        const now = Date.now();
-        const timeDiff = now - lastUpdate;
+                lastUpdate = now;
+            }
+        });
 
-        if (timeDiff > 1000) { // Update progress every second
-            const speed = (downloaded - downloadedSize) / (timeDiff / 1000);
-            const percent = (downloaded / total) * 100;
+        const writeStream = createWriteStream(outputFile);
+        video.pipe(writeStream);
 
-            emitter.emit('progress', {
-                percent: Number(percent.toFixed(2)),
-                downloaded: Number(downloaded),
-                total: Number(total),
-                speed: Number(speed)
-            });
+        writeStream.on('finish', () => {
+            if (!emitter.cancelled) {
+                emitter.emit('complete', outputFile);
+            }
+        });
 
-            lastUpdate = now;
-        }
-    });
-
-    const writeStream = createWriteStream(outputFile);
-    video.pipe(writeStream);
-
-    writeStream.on('finish', () => {
-        if (!emitter.cancelled) {
-            emitter.emit('complete', outputFile);
-        }
-    });
-
-    writeStream.on('error', error => {
-        emitter.emit('error', error);
-    });
+        writeStream.on('error', error => {
+            emitter.emit('error', error);
+        });
+    }
 }
 
 function downloadAudio(url, outputFile, emitter) {

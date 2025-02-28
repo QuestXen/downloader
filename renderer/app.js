@@ -95,14 +95,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedFormat = document.querySelector('input[name="format"]:checked').value;
         qualitySelect.innerHTML = '';
         
-        const filteredFormats = formats.filter(format => {
-            if (selectedFormat === 'audio') {
-                return format.hasAudio && !format.hasVideo;
-            }
-            return format.hasVideo && format.hasAudio;
-        });
+        let filteredFormats;
+        if (selectedFormat === 'audio') {
+            // Für Audio nur Audio-Only Formate
+            filteredFormats = formats.filter(format => !format.hasVideo && format.hasAudio);
+        } else {
+            // Für Video alle Videoformate
+            filteredFormats = formats.filter(format => format.hasVideo);
+        }
 
-        // Sort formats by quality
+        // Sortiere Formate
         filteredFormats.sort((a, b) => {
             if (selectedFormat === 'audio') {
                 return (b.audioBitrate || 0) - (a.audioBitrate || 0);
@@ -118,7 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bitrate = format.audioBitrate ? `${format.audioBitrate}kbps` : 'Unknown quality';
                 option.textContent = `${bitrate} (${format.container})`;
             } else {
-                option.textContent = `${format.qualityLabel} (${format.container})`;
+                const fps = format.fps ? `${format.fps}fps` : '';
+                option.textContent = `${format.qualityLabel} ${fps} (${format.container})`;
             }
             
             qualitySelect.appendChild(option);
