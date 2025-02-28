@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>YouTube Downloader</h1>
+        </header>
+
+        <main>
+            <div class="input-section">
+                <div class="url-input">
+                    <input type="text" id="videoUrl" placeholder="Enter YouTube URL">
+                    <button id="searchBtn">Search</button>
+                </div>
+
+                <div id="videoInfo" class="video-info hidden">
+                    <img id="thumbnail" alt="Video thumbnail">
+                    <div class="info-text">
+                        <h3 id="videoTitle"></h3>
+                        <p id="videoDuration"></p>
+                    </div>
+                </div>
+
+                <div class="download-options">
+                    <div class="format-selection">
+                        <label>
+                            <input type="radio" name="format" value="video" checked>
+                            Video
+                        </label>
+                        <label>
+                            <input type="radio" name="format" value="audio">
+                            Audio (MP3)
+                        </label>
+                    </div>
+
+                    <select id="quality" class="quality-select">
+                        <option value="">Select Quality</option>
+                    </select>
+
+                    <div class="download-path">
+                        <input type="text" id="downloadPath" readonly placeholder="Select download location">
+                        <button id="browseBtn">Browse</button>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="downloadBtn" class="primary-btn" disabled>Download</button>
+                    <button id="cancelBtn" class="secondary-btn hidden">Cancel</button>
+                </div>
+            </div>
+
+            <div class="progress-section hidden">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="progressText">0%</span>
+                    <span id="downloadSpeed"></span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <button id="settingsBtn" class="icon-btn">⚙️</button>
+                <div id="settingsPanel" class="hidden">
+                    <h3>Settings</h3>
+                    <label>
+                        <input type="checkbox" id="saveLocation">
+                        Remember download location
+                    </label>
+                    <label>
+                        <input type="checkbox" id="autoQuality">
+                        Always use highest quality
+                    </label>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div id="status" class="status-bar"></div>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
