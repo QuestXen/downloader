@@ -2,10 +2,11 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Store from 'electron-store';
-import { downloadVideo, getVideoInfo } from './utils/downloader.js';  // Add getVideoInfo here
+import { downloadVideo, getVideoInfo } from './utils/downloader.js';
 import settings from './utils/settings.js';
-import { autoUpdater } from 'electron-updater';
-import { log } from 'electron-log';
+import pkg from 'electron-updater';  // Change this line
+const { autoUpdater } = pkg;  // Add this line
+import log from 'electron-log';
 
 log.transports.file.level = 'info';
 log.info('App startet...');

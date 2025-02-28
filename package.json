@@ -9,15 +9,30 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "release": "node -r dotenv/config ./node_modules/.bin/electron-builder --publish always"
+    "release": "electron-builder --publish always"
   },
   "build": {
     "appId": "com.questxen.youtube-downloader",
     "productName": "Youtube Downloader",
+    "files": [
+      "**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "publisherName": "QuestXen"
     },
     "nsis": {
       "oneClick": true,
@@ -25,11 +40,23 @@
       "createDesktopShortcut": true,
       "runAfterFinish": true
     },
+    "extraResources": [
+      {
+        "from": "node_modules/@distube/ytdl-core",
+        "to": "app.asar.unpacked/node_modules/@distube/ytdl-core"
+      },
+      {
+        "from": "node_modules/undici",
+        "to": "app.asar.unpacked/node_modules/undici"
+      }
+    ],
     "publish": [
       {
         "provider": "github",
         "owner": "QuestXen",
-        "repo": "downloader"
+        "repo": "downloader",
+        "private": true,
+        "token": "${env.GH_TOKEN}"
       }
     ]
   },
@@ -43,6 +70,7 @@
     "electron-log": "^5.3.0",
     "electron-store": "^10.0.1",
     "electron-updater": "^6.3.9",
-    "ffmpeg-static": "^5.2.0"
+    "ffmpeg-static": "^5.2.0",
+    "undici": "^7.4.0"
   }
 }
