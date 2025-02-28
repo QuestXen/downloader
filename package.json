@@ -1,11 +1,15 @@
 {
   "name": "youtube-downloader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple YouTube downloader application built with Electron.",
   "main": "main.js",
   "type": "module",
   "author": "Artjom",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/QuestXen/downloader.git"
+  },
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
@@ -30,9 +34,13 @@
     ],
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
       ],
-      "publisherName": "QuestXen"
+      "publisherName": "QuestXen",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": true,
@@ -56,9 +64,18 @@
         "owner": "QuestXen",
         "repo": "downloader",
         "private": true,
-        "token": "${env.GH_TOKEN}"
+        "releaseType": "release",
+        "token": "${env.GH_TOKEN}",
+        "updateInfo": {
+          "releaseNotes": "New version available"
+        },
+        "publishAutoUpdate": true
       }
-    ]
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    }
   },
   "devDependencies": {
     "dotenv": "^16.4.7",

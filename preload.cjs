@@ -43,5 +43,9 @@ contextBridge.exposeInMainWorld('api', {
 
     onDownloadError: (callback) => {
         ipcRenderer.on('download-error', (event, error) => callback(error));
+    },
+
+    getAppVersion: () => {
+        return ipcRenderer.invoke('get-app-version');
     }
 });

@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsPanel = document.getElementById('settingsPanel');
     const saveLocationCheckbox = document.getElementById('saveLocation');
     const autoQualityCheckbox = document.getElementById('autoQuality');
+    const appVersion = document.getElementById('appVersion');
 
     // YouTube URL validation regex
     const youtubeUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load saved settings
     let settings = {};
     loadSettings();
+    displayAppVersion();
 
     async function loadSettings() {
         settings = await window.api.getSettings() || {};
@@ -34,6 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
         autoQualityCheckbox.checked = settings.autoQuality || false;
         if (settings.saveLocation && settings.lastPath) {
             downloadPath.value = settings.lastPath;
+        }
+    }
+
+    async function displayAppVersion() {
+        try {
+            const version = await window.api.getAppVersion();
+            appVersion.textContent = `v${version}`;
+        } catch (error) {
+            console.error('Failed to get app version:', error);
         }
     }
 

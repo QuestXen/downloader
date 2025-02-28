@@ -35,12 +35,23 @@ function createWindow() {
 
 // Setup für autoUpdater mit GitHub
 function setupAutoUpdater() {
-    // Aktiviere Logging
+    if (process.env.NODE_ENV === 'development') {
+        log.info('Überspringe Auto-Update im Development-Modus');
+        return;
+    }
+
     autoUpdater.logger = log;
-    
-    // Die GitHub-Konfiguration ist bereits in package.json definiert
-    // (siehe unten für die package.json Konfiguration)
-    
+    autoUpdater.allowDowngrade = false;
+    autoUpdater.allowPrerelease = false;
+
+    autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'QuestXen',
+        repo: 'downloader',
+        private: true,
+        token: process.env.GH_TOKEN
+    });
+
     autoUpdater.on('checking-for-update', () => {
       log.info('Überprüfe auf Updates...');
     });
@@ -187,4 +198,8 @@ ipcMain.handle('search-video', async (event, url) => {
         console.error('Search video error:', error);
         throw new Error('Failed to fetch video information');
     }
+});
+
+ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
 });
