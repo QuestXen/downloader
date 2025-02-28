@@ -37,26 +37,36 @@ async function getVideoInfo(url) {
         const videoDetails = info.videoDetails;
         const formats = info.formats;
         
-        // Filter out formats without video or audio
-        const filteredFormats = formats.filter(format => 
-            (format.hasVideo || format.hasAudio) && 
-            !format.isDashMPD && 
-            !format.isHLS
-        );
+        // Verbesserte Format-Filterung
+        const filteredFormats = formats
+            .filter(format => {
+                // Für Video-Formate
+                if (format.hasVideo) {
+                    return format.hasVideo && format.hasAudio; // Nur Formate mit Video UND Audio
+                }
+                // Für Audio-Formate
+                return format.hasAudio && !format.hasVideo; // Nur Audio-Formate
+            })
+            .sort((a, b) => {
+                // Sortiere nach Qualität (höchste zuerst)
+                if (a.height && b.height) {
+                    return b.height - a.height;
+                }
+                return 0;
+            });
 
-        // Serialize the format information to avoid cloning errors
         return {
             title: videoDetails.title,
             duration: parseInt(videoDetails.lengthSeconds),
             thumbnail: videoDetails.thumbnails[0].url,
             formats: filteredFormats.map(format => ({
                 itag: format.itag,
-                qualityLabel: format.qualityLabel || 'Audio Only',
+                qualityLabel: format.qualityLabel || format.audioQuality || 'Audio Only',
                 container: format.container,
                 hasVideo: format.hasVideo,
                 hasAudio: format.hasAudio,
-                quality: format.audioQuality || format.qualityLabel,
-                contentLength: format.contentLength ? parseInt(format.contentLength) : 0
+                height: format.height || 0,
+                audioBitrate: format.audioBitrate || 0
             }))
         };
     } catch (error) {
@@ -107,10 +117,9 @@ function downloadVideo(url, format, outputPath, quality) { // Fügen Sie quality
 }
 
 function downloadVideoFile(url, outputFile, emitter, quality) {
-    // Ändern Sie die quality-Option von 'highest' zu itag
     const video = ytdl(url, {
-        quality: quality.itag, // Wird durch die ausgewählte Qualität ersetzt
-        filter: format => format.hasVideo,
+        quality: quality, // Just pass the itag directly
+        filter: format => format.hasVideo && format.hasAudio,
         agent,
         requestOptions: {
             headers: {

@@ -63,15 +63,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Search Video Information
+    let lastVideoData = null; // Global variable to store video data
+
     async function handleSearch() {
         if (!validateUrl()) return;
 
         try {
             setStatus('Fetching video information...', 'info');
             const videoData = await window.api.searchVideo(videoUrlInput.value);
+            lastVideoData = videoData; // Save video data
             displayVideoInfo(videoData);
             populateQualityOptions(videoData.formats);
             downloadBtn.disabled = false;
+            setStatus('', 'info'); // Clear status message
         } catch (error) {
             setStatus('Failed to fetch video information', 'error');
             console.error(error);
@@ -91,27 +95,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedFormat = document.querySelector('input[name="format"]:checked').value;
         qualitySelect.innerHTML = '';
         
-        formats
-            .filter(format => {
-                if (selectedFormat === 'audio') {
-                    return format.hasAudio && !format.hasVideo;
-                }
-                return format.hasVideo;
-            })
-            .forEach(format => {
-                const option = document.createElement('option');
-                option.value = format.itag;
-                
-                if (selectedFormat === 'audio') {
-                    option.textContent = `${format.audioQuality || 'Unknown'} (${format.container})`;
-                } else {
-                    option.textContent = `${format.qualityLabel} (${format.container})`;
-                }
-                
-                qualitySelect.appendChild(option);
-            });
+        const filteredFormats = formats.filter(format => {
+            if (selectedFormat === 'audio') {
+                return format.hasAudio && !format.hasVideo;
+            }
+            return format.hasVideo && format.hasAudio;
+        });
 
-        if (settings.autoQuality) {
+        // Sort formats by quality
+        filteredFormats.sort((a, b) => {
+            if (selectedFormat === 'audio') {
+                return (b.audioBitrate || 0) - (a.audioBitrate || 0);
+            }
+            return (b.height || 0) - (a.height || 0);
+        });
+
+        filteredFormats.forEach(format => {
+            const option = document.createElement('option');
+            option.value = format.itag;
+            
+            if (selectedFormat === 'audio') {
+                const bitrate = format.audioBitrate ? `${format.audioBitrate}kbps` : 'Unknown quality';
+                option.textContent = `${bitrate} (${format.container})`;
+            } else {
+                option.textContent = `${format.qualityLabel} (${format.container})`;
+            }
+            
+            qualitySelect.appendChild(option);
+        });
+
+        // Automatically select highest quality if enabled
+        if (settings.autoQuality || qualitySelect.options.length > 0) {
             qualitySelect.selectedIndex = 0;
         }
     }
@@ -206,9 +220,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fügen Sie einen Event Listener für Format-Änderungen hinzu
     document.querySelectorAll('input[name="format"]').forEach(radio => {
         radio.addEventListener('change', () => {
-            if (videoInfo.classList.contains('hidden')) return;
-            const videoData = lastVideoData; // Speichern Sie die Video-Daten global
-            populateQualityOptions(videoData.formats);
+            if (lastVideoData) {
+                populateQualityOptions(lastVideoData.formats);
+            }
         });
     });
 });
