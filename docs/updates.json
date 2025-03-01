@@ -1,12 +1,12 @@
 {
-  "version": "1.0.3",
-  "releaseDate": "2025-03-01T08:10:03.435Z",
+  "version": "1.0.4",
+  "releaseDate": "2025-03-01T08:19:26.664Z",
   "releaseNotes": "Neue Version verfügbar. Verbesserungen und Fehlerbehebungen.",
   "updateInfo": {
     "win": {
-      "url": "https://github.com/QuestXen/downloader/releases/download/v1.0.3/Youtube.Downloader-Setup-1.0.3.exe",
-      "sha512": "h8MpPrA23WqEuMelctQlSKbLZCr6Lc4gwPHg7xvt6VJN3yfeU1hwbeahli1cPirqOIF8icTB4xodP9Hl5JjKJQ==",
-      "size": 104827421
+      "url": "https://github.com/QuestXen/downloader/releases/download/v1.0.4/Youtube.Downloader-Setup-1.0.4.exe",
+      "sha512": "v6GMzhHx4t9wCB6GDmZpiyh9y2jnO76xmGJi6TqmbfffKTs/IWLSUdOjdx/yXqdImDtn+3BGIsnQ6UhwhW7dGQ==",
+      "size": 104827240
     }
   }
 }
