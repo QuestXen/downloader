@@ -55,7 +55,7 @@ const repo = repoMatch ? repoMatch[2] : 'downloader';
 
 // Konstruieren der Download-URL für GitHub Releases
 const githubFileName = setupFileName.replace(/\s+/g, '.'); // Replace spaces with dots
-const downloadUrl = `https://github.com/${owner}/${repo}/releases/download/v${version}/${setupFileName}`;
+const downloadUrl = `https://github.com/${owner}/${repo}/releases/download/v${version}/${githubFileName}`;
 
 // Updates-JSON erstellen
 const updatesJson = {
