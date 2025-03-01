@@ -116,6 +116,9 @@ function createWindow() {
 
 // Angepasste Funktion für Self-Hosted Updates
 function setupSelfHostedUpdater() {
+    log.info('Starting update check...');
+    log.info('Update URL:', updateURL);
+
     if (process.env.NODE_ENV === 'development') {
         log.info('Überspringe Auto-Update im Development-Modus');
         return;
@@ -126,11 +129,11 @@ function setupSelfHostedUpdater() {
     // Wichtig: URL für updates.json setzen
     autoUpdater.setFeedURL({
         provider: 'generic',
-        url: updateURL
+        url: 'https://questxen.github.io/downloader',
     });
     
     // Deaktiviere einige Standardprüfungen
-    autoUpdater.autoDownload = false; // Automatisches Herunterladen deaktivieren
+    autoUpdater.autoDownload = true; // Automatisches Herunterladen deaktivieren
     
     autoUpdater.on('checking-for-update', () => {
         log.info('Überprüfe auf Updates...');
@@ -193,7 +196,9 @@ function setupSelfHostedUpdater() {
     });
     
     autoUpdater.on('error', (error) => {
-        log.error('Fehler beim Update-Prozess:', error);
+        log.error('Update error details:', error);
+        log.error('Update error message:', error.message);
+        log.error('Update error stack:', error.stack);
         
         // Bei einem Update-Fehler bieten wir einen manuellen Download an
         offerManualDownload();
