@@ -13,7 +13,8 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "release": "electron-builder --publish always"
+    "release": "node build-scripts/prepare-release.js && electron-builder",
+    "update-json": "node build-scripts/update-json.js"
   },
   "build": {
     "appId": "com.questxen.youtube-downloader",
@@ -30,7 +31,8 @@
       "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
       "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
-      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}",
+      "!build-scripts/**"
     ],
     "win": {
       "target": [
@@ -59,13 +61,8 @@
       }
     ],
     "publish": {
-      "provider": "github",
-      "owner": "QuestXen",
-      "repo": "downloader",
-      "private": false,
-      "releaseType": "release",
-      "publishAutoUpdate": true,
-      "vPrefixedTagName": true
+      "provider": "generic",
+      "url": "https://questxen.github.io/downloader"
     },
     "directories": {
       "output": "dist",
@@ -75,7 +72,8 @@
   "devDependencies": {
     "dotenv": "^16.4.7",
     "electron": "^34.3.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "crypto": "^1.0.1"
   },
   "dependencies": {
     "@distube/ytdl-core": "^4.16.4",

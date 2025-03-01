@@ -7,6 +7,7 @@ import settings from './utils/settings.js';
 import pkg from 'electron-updater';  // Change this line
 const { autoUpdater } = pkg;  // Add this line
 import log from 'electron-log';
+import { shell } from 'electron';
 
 log.transports.file.level = 'info';
 log.info('App startet...');
@@ -17,6 +18,9 @@ const __dirname = path.dirname(__filename);
 const store = new Store();
 let mainWindow;
 let currentDownload = null;
+
+// Füge diese URL zur Konfiguration hinzu - Diese zeigt auf Ihre GitHub Pages Update-Datei
+const updateURL = 'https://questxen.github.io/downloader/updates.json';
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -44,26 +48,21 @@ function setupAutoUpdater() {
     autoUpdater.allowDowngrade = false;
     autoUpdater.allowPrerelease = false;
 
-    autoUpdater.setFeedURL({
-        provider: 'github',
-        owner: 'QuestXen',
-        repo: 'downloader',
-        private: true,
-        token: process.env.GH_TOKEN
-    });
+    // Entfernt die setFeedURL Konfiguration, da sie für öffentliche Repos nicht notwendig ist
+    // Der autoUpdater nutzt automatisch die Repository-URL aus package.json
 
     autoUpdater.on('checking-for-update', () => {
-      log.info('Überprüfe auf Updates...');
+        log.info('Überprüfe auf Updates...');
     });
     
     autoUpdater.on('update-available', (info) => {
-      log.info('Update verfügbar', info);
-      dialog.showMessageBox({
-        type: 'info',
-        title: 'Update verfügbar',
-        message: `Version ${info.version} ist verfügbar und wird heruntergeladen...`,
-        buttons: ['OK']
-      });
+        log.info('Update verfügbar', info);
+        dialog.showMessageBox({
+            type: 'info',
+            title: 'Update verfügbar',
+            message: `Version ${info.version} ist verfügbar und wird heruntergeladen...`,
+            buttons: ['OK']
+        });
     });
     
     autoUpdater.on('update-not-available', () => {
@@ -115,10 +114,123 @@ function setupAutoUpdater() {
     });
   }
 
+// Angepasste Funktion für Self-Hosted Updates
+function setupSelfHostedUpdater() {
+    if (process.env.NODE_ENV === 'development') {
+        log.info('Überspringe Auto-Update im Development-Modus');
+        return;
+    }
+
+    autoUpdater.logger = log;
+    
+    // Wichtig: URL für updates.json setzen
+    autoUpdater.setFeedURL({
+        provider: 'generic',
+        url: updateURL
+    });
+    
+    // Deaktiviere einige Standardprüfungen
+    autoUpdater.autoDownload = false; // Automatisches Herunterladen deaktivieren
+    
+    autoUpdater.on('checking-for-update', () => {
+        log.info('Überprüfe auf Updates...');
+    });
+    
+    autoUpdater.on('update-available', (info) => {
+        log.info('Update verfügbar', info);
+        
+        // Anstatt automatisch herunterzuladen, fragen wir den Benutzer
+        dialog.showMessageBox({
+            type: 'info',
+            title: 'Update verfügbar',
+            message: `Version ${info.version} ist verfügbar.`,
+            detail: 'Möchten Sie die neue Version jetzt herunterladen und installieren?',
+            buttons: ['Herunterladen', 'Website öffnen', 'Später']
+        }).then((returnValue) => {
+            if (returnValue.response === 0) {
+                // Starte den Download-Prozess
+                autoUpdater.downloadUpdate().catch(err => {
+                    log.error('Download-Fehler:', err);
+                    // Bei Fehler zur manuellen Download-Seite weiterleiten
+                    offerManualDownload(info.version);
+                });
+            } else if (returnValue.response === 1) {
+                // Öffne direkt die Release-Seite
+                shell.openExternal('https://github.com/QuestXen/downloader/releases/latest');
+            }
+        });
+    });
+    
+    autoUpdater.on('update-not-available', () => {
+        log.info('Kein Update verfügbar');
+    });
+    
+    autoUpdater.on('download-progress', (progressObj) => {
+        let logMessage = `Download-Geschwindigkeit: ${progressObj.bytesPerSecond}`;
+        logMessage += ` - Heruntergeladen: ${progressObj.percent}%`;
+        logMessage += ` (${progressObj.transferred}/${progressObj.total})`;
+        log.info(logMessage);
+        
+        // Optional: Update-Fortschritt im Hauptfenster anzeigen
+        if (mainWindow) {
+            mainWindow.webContents.send('update-progress', progressObj);
+        }
+    });
+    
+    autoUpdater.on('update-downloaded', (info) => {
+        log.info('Update heruntergeladen');
+        
+        dialog.showMessageBox({
+            type: 'info',
+            title: 'Update bereit',
+            message: `Die Version ${info.version} wurde heruntergeladen und wird beim Neustart installiert.`,
+            buttons: ['Jetzt neu starten', 'Später']
+        }).then((returnValue) => {
+            if (returnValue.response === 0) {
+                autoUpdater.quitAndInstall();
+            }
+        });
+    });
+    
+    autoUpdater.on('error', (error) => {
+        log.error('Fehler beim Update-Prozess:', error);
+        
+        // Bei einem Update-Fehler bieten wir einen manuellen Download an
+        offerManualDownload();
+    });
+  
+    // Überprüfe bei Programmstart und dann alle 6 Stunden auf Updates
+    autoUpdater.checkForUpdates().catch(err => {
+        log.error('Fehler bei erster Update-Prüfung:', err);
+    });
+    
+    setInterval(() => {
+        autoUpdater.checkForUpdates().catch(err => {
+            log.error('Fehler bei Update-Prüfung:', err);
+        });
+    }, 6 * 60 * 60 * 1000);
+}
+
+  // Hilfsfunktion für manuellen Download
+function offerManualDownload(version) {
+    dialog.showMessageBox({
+        type: 'info',
+        title: 'Update nicht möglich',
+        message: 'Automatisches Update nicht möglich.',
+        detail: version ? `Sie können Version ${version} manuell von der Website herunterladen.` : 
+                          'Sie können die neueste Version manuell von der Website herunterladen.',
+        buttons: ['Website öffnen', 'Abbrechen']
+    }).then((returnValue) => {
+        if (returnValue.response === 0) {
+            shell.openExternal('https://github.com/QuestXen/downloader/releases/latest');
+        }
+    });
+}
+
 // App Events
 app.on('ready', () => {
     createWindow();
-    setupAutoUpdater();
+    setupSelfHostedUpdater();
   });
 
 app.on('window-all-closed', () => {
@@ -202,4 +314,22 @@ ipcMain.handle('search-video', async (event, url) => {
 
 ipcMain.handle('get-app-version', () => {
     return app.getVersion();
+});
+
+// Füge einen Menüpunkt oder Button hinzu, um Updates manuell zu überprüfen
+ipcMain.handle('check-for-updates', async () => {
+    if (process.env.NODE_ENV === 'development') {
+        return { success: false, message: 'Im Entwicklungsmodus nicht verfügbar' };
+    }
+    
+    try {
+        await autoUpdater.checkForUpdates();
+        return { success: true };
+    } catch (error) {
+        log.error('Fehler bei manueller Update-Prüfung:', error);
+        return { 
+            success: false, 
+            message: 'Fehler bei der Update-Prüfung: ' + error.message 
+        };
+    }
 });

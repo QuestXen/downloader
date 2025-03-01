@@ -1,0 +1,12 @@
+{
+    "version": "1.0.2",
+    "releaseDate": "2025-03-01T12:00:00.000Z",
+    "releaseNotes": "* Fehler behoben\n* Leistungsverbesserungen",
+    "updateInfo": {
+      "win": {
+        "url": "https://github.com/QuestXen/downloader/releases/download/v1.0.2/Youtube-Downloader-Setup-1.0.2.exe",
+        "sha512": "SHA512_HASH_HIER_EINFÜGEN",
+        "size": ""
+      }
+    }
+  }
